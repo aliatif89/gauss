@@ -31,3 +31,5 @@ jobs:
           ./gradlew --version
           echo "Build file:"
           head -20 build.gradle
+                - name: Build Plugin
+        run: ./gradlew makePlugins --stacktrace
