@@ -1,37 +1,22 @@
-
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url 'https://jitpack.io' }
-    }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.7.3'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21'
-        classpath 'com.github.recloudstream:gradle:-SNAPSHOT'
-    }
+plugins {
+    id 'com.android.application' version '8.1.4'
+    id 'org.jetbrains.kotlin.android' version '1.9.0'
+    id 'com.github.recloudstream.gradle' version 'master-SNAPSHOT'
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url 'https://jitpack.io' }
-    }
+repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
-
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'com.lagradost.cloudstream3.gradle'
 
 android {
     namespace "com.lagradost.cloudstream3.plugins"
-    compileSdk 35
+    compileSdk 33
 
     defaultConfig {
         minSdk 21
-        targetSdk 35
+        targetSdk 33
         versionCode 1
         versionName "1.0"
     }
