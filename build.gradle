@@ -46,5 +46,5 @@ android {
 }
 
 cloudstream {
-    setRepo("gauss")
+    setRepo("aliatif89/gauss")
 }
