@@ -9,10 +9,10 @@ object GaussSourceManager {
     private const val CONFIG_URL =
         "https://raw.githubusercontent.com/aliatif89/gauss/main/config/sources.json"
 
+    private const val CACHE_DURATION = 5 * 60 * 1000L
+
     private var lastFetchTime = 0L
     private var cachedUrl: String? = null
-
-    private const val CACHE_DURATION = 5 * 60 * 1000L
 
     suspend fun refreshHDFilmCehennemi(
         provider: HdFilmCehennemiProvider
@@ -30,7 +30,6 @@ object GaussSourceManager {
         try {
             val response = app.get(CONFIG_URL)
             val json = JSONObject(response.text)
-
             val sources = json.getJSONArray("sources")
 
             for (i in 0 until sources.length()) {
@@ -52,12 +51,12 @@ object GaussSourceManager {
                         lastFetchTime = now
                         provider.mainUrl = url
                     }
+
                     return
                 }
             }
         } catch (_: Exception) {
-            // Uzak ayar alınamazsa mevcut adres kullanılmaya devam eder.
+            // GitHub erişilemezse mevcut adres korunur.
         }
     }
 }
-
