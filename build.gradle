@@ -6,9 +6,9 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.7.3'
+        classpath 'com.android.tools.build:gradle:8.1.4'
         classpath 'com.github.recloudstream:gradle:81b1d424d2'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22'
     }
 }
 
@@ -26,11 +26,11 @@ apply plugin: 'com.lagradost.cloudstream3.gradle'
 
 android {
     namespace "com.lagradost.cloudstream3.plugins"
-    compileSdk 35
+    compileSdk 34
 
     defaultConfig {
         minSdk 21
-        targetSdk 35
+        targetSdk 34
         versionCode 1
         versionName "1.0"
     }
