@@ -6,9 +6,6 @@ import android.app.AlertDialog
 import android.widget.EditText
 import android.text.InputType
 
-import com.lagradost.cloudstream3.plugins.Plugin
-import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
-
 @CloudstreamPlugin
 class GaussPlugin : Plugin() {
 
@@ -27,7 +24,10 @@ class GaussPlugin : Plugin() {
         )
 
         if (!savedUrl.isNullOrBlank()) {
-            provider.mainUrl = savedUrl.trim().trimEnd('/')
+            val customUrl = savedUrl.trim().trimEnd('/')
+
+            provider.userConfiguredUrl = customUrl
+            provider.mainUrl = customUrl
         }
 
         registerMainAPI(provider)
@@ -46,6 +46,7 @@ class GaussPlugin : Plugin() {
                 .setTitle("GAUSS Kaynak Ayarları")
                 .setMessage("HDFilmCehennemi site adresi")
                 .setView(input)
+
                 .setPositiveButton("Kaydet") { _, _ ->
 
                     val newUrl = input.text.toString()
@@ -57,21 +58,29 @@ class GaussPlugin : Plugin() {
                         newUrl.startsWith("http://")
                     ) {
                         preferences.edit()
-                            .putString("hdfilmcehennemi_url", newUrl)
+                            .putString(
+                                "hdfilmcehennemi_url",
+                                newUrl
+                            )
                             .apply()
 
+                        provider.userConfiguredUrl = newUrl
                         provider.mainUrl = newUrl
                     }
                 }
+
                 .setNeutralButton("Varsayılana dön") { _, _ ->
 
                     preferences.edit()
                         .remove("hdfilmcehennemi_url")
                         .apply()
 
+                    provider.userConfiguredUrl = null
+
                     provider.mainUrl =
                         "https://www.hdfilmcehennemi.nl"
                 }
+
                 .setNegativeButton("Kapat", null)
                 .show()
         }
