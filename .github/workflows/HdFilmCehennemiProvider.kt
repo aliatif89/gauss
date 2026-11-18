@@ -5,7 +5,6 @@ import com.lagradost.cloudstream3.utils.*
 import org.jsoup.nodes.Element
 
 class HdFilmCehennemiProvider : MainAPI() {
-    // Site adresi değiştiğinde sadece bu satırı güncellemen yeterlidir:
     override var mainUrl = "https://www.hdfilmcehennemi.nl"
     
     override var name = "HdFilmCehennemi"
@@ -18,21 +17,18 @@ class HdFilmCehennemiProvider : MainAPI() {
         val document = app.get(mainUrl).document
         val home = ArrayList<HomePageList>()
 
-        // Sitedeki film kartlarını seçiyoruz (Örnek seçici, site yapısına göre ufak değişebilir)
         val elements = document.select("div.col-xl-2, div.film-box") 
-        
         val list = elements.mapNotNull { element ->
             element.toSearchResult()
         }
 
         if (list.isNotEmpty()) {
-            home.add(HomePageList("Son Eklenen Filmler", list))
+            home.add(HomePageList("Son Eklenenler", list))
         }
 
         return newHomePageResponse(home, false)
     }
 
-    // HTML Elemanını CloudStream Arama/Ana Sayfa Sonucuna Dönüştürme Yardımcısı
     private fun Element.toSearchResult(): SearchResponse? {
         val title = this.select("a.title, h3 a, .film-title").text().trim()
         val poster = this.select("img").attr("data-src").ifEmpty { 
@@ -47,7 +43,7 @@ class HdFilmCehennemiProvider : MainAPI() {
         }
     }
 
-    // 2. ARAMA YAPMA FONKSİYONU
+    // 2. ARAMA YAPMA
     override suspend fun search(query: String): List<SearchResponse> {
         val searchUrl = "$mainUrl/arama?q=$query"
         val document = app.get(searchUrl).document
@@ -57,7 +53,7 @@ class HdFilmCehennemiProvider : MainAPI() {
         }
     }
 
-    // 3. FİLM DETAYLARI, DUBLAJ/ALTYAZI VE VİDEO KAYNAKLARI (LOAD)
+    // 3. FİLM / DİZİ DETAYLARI VE SEÇENEKLER (GÜNCEL LOAD)
     override suspend fun load(url: String): LoadResponse {
         val document = app.get(url).document
         
@@ -66,15 +62,57 @@ class HdFilmCehennemiProvider : MainAPI() {
         val description = document.select(".film-summary, .ozet").text().trim()
         val year = document.select(".yil, .year").text().toIntOrNull()
 
-        // Dublaj ve Altyazı seçeneklerini burada bölüm/alternatif olarak ekleyeceğiz
-        return newMovieLoadResponse(title, url, TvType.Movie, url) {
-            this.posterUrl = poster
-            this.plot = description
-            this.year = year
+        val isSeries = url.contains("/dizi/") || document.select(".bolum-listesi").isNotEmpty()
+
+        if (isSeries) {
+            val episodes = ArrayList<Episode>()
+            document.select(".bolum-secenekleri a, .episodelist a").forEachIndexed { index, element ->
+                val epName = element.text().trim()
+                val epUrl = fixUrl(element.attr("href"))
+                
+                episodes.add(
+                    Episode(
+                        data = epUrl,
+                        name = epName,
+                        episode = index + 1,
+                        season = 1
+                    )
+                )
+            }
+
+            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+                this.posterUrl = poster
+                this.plot = description
+                this.year = year
+            }
+        } else {
+            val episodes = ArrayList<Episode>()
+            val altLinks = document.select(".alternatif-secenekleri a, .dil-secenekleri button")
+            
+            if (altLinks.isNotEmpty()) {
+                altLinks.forEachIndexed { index, element ->
+                    val langName = element.text().trim()
+                    episodes.add(
+                        Episode(
+                            data = url,
+                            name = langName,
+                            episode = index + 1
+                        )
+                    )
+                }
+            } else {
+                episodes.add(Episode(data = url, name = "Tek Parça", episode = 1))
+            }
+
+            return newMovieLoadResponse(title, url, TvType.Movie, episodes) {
+                this.posterUrl = poster
+                this.plot = description
+                this.year = year
+            }
         }
     }
 
-    // 4. VİDEO OYNATMA LİNKLERİNİ ÇÖZME (LOAD LINKS)
+    // 4. VİDEO LİNKLERİNİ ÇÖZME
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
@@ -82,10 +120,12 @@ class HdFilmCehennemiProvider : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
         val document = app.get(data).document
-        
-        // Sitenin içindeki video oynatıcı kaynaklarını (iframe / m3u8 / mp4) burada yakalayıp callback ile oynatıcıya veriyoruz.
-        // CloudStream'in yerleşik extractor'ları (loadExtractor vb.) burada devreye girecek.
-        
+        val videoIframeUrl = document.select("iframe.embed-responsive-item, iframe#playerElement").attr("src")
+
+        if (videoIframeUrl.isNotEmpty()) {
+            loadExtractor(fixUrl(videoIframeUrl), data, subtitleCallback, callback)
+        }
+
         return true
     }
 }
