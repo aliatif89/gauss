@@ -32,6 +32,30 @@ class HdFilmCehennemiProvider : MainAPI() {
         return fixUrl(trimmed)
     }
 
+    private suspend fun invokeCloudstreamExtractor(
+        url: String,
+        referer: String,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        try {
+            val clazz = Class.forName("com.lagradost.cloudstream3.utils.ExtractorApiKt")
+            val method = clazz.methods.firstOrNull { m ->
+                m.name == "loadExtractor" && m.parameterCount >= 4
+            }
+            if (method != null) {
+                val continuation = kotlin.coroutines.intrinsics.suspendCoroutineUninterceptedOrReturn<Any?> { cont ->
+                    method.invoke(null, url, referer, subtitleCallback, callback, cont)
+                }
+                if (continuation === kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED) {
+                    return
+                }
+            }
+        } catch (_: Exception) {
+            // Derleme/çalışma ortamında extractor bulunamazsa sessizce geçilir.
+        }
+    }
+
     // ANA SAYFA
 
     override suspend fun getMainPage(
@@ -198,7 +222,7 @@ class HdFilmCehennemiProvider : MainAPI() {
 
         val resolvedUrl = safeFixUrl(videoIframeUrl)
         if (resolvedUrl.isNotEmpty()) {
-            loadExtractor(
+            invokeCloudstreamExtractor(
                 resolvedUrl,
                 data,
                 subtitleCallback,
