@@ -45,6 +45,11 @@ android {
     }
 }
 
+dependencies {
+    compileOnly 'com.github.recloudstream:cloudstream:pre-release'
+    implementation 'org.jsoup:jsoup:1.17.2'
+}
+
 cloudstream {
     setRepo("aliatif89/gauss")
 }
