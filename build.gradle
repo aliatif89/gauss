@@ -26,11 +26,11 @@ apply plugin: 'com.lagradost.cloudstream3.gradle'
 
 android {
     namespace "com.lagradost.cloudstream3.plugins"
-    compileSdk 34
+    compileSdk 33
 
     defaultConfig {
         minSdk 21
-        targetSdk 34
+        targetSdk 33
         versionCode 1
         versionName "1.0"
     }
@@ -46,7 +46,6 @@ android {
 }
 
 dependencies {
-    compileOnly 'com.github.recloudstream:cloudstream:pre-release'
     implementation 'org.jsoup:jsoup:1.17.2'
 }
 
