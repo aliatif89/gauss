@@ -1,7 +1,6 @@
-
 package com.lagradost.cloudstream3.plugins
 
-import com.lagradost.cloudstream3.utils.app
+import com.lagradost.cloudstream3.app
 import org.json.JSONObject
 
 object GaussSourceManager {
