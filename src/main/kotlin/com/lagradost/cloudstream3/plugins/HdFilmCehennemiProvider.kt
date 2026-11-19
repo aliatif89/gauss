@@ -1,4 +1,3 @@
-
 package com.lagradost.cloudstream3.plugins
 
 import com.lagradost.cloudstream3.*
@@ -17,7 +16,6 @@ class HdFilmCehennemiProvider : MainAPI() {
     override var hasMainPage = true
 
     private suspend fun ensureSourceUrl() {
-
         val customUrl = userConfiguredUrl
 
         if (!customUrl.isNullOrBlank()) {
@@ -28,13 +26,18 @@ class HdFilmCehennemiProvider : MainAPI() {
         GaussSourceManager.refreshHDFilmCehennemi(this)
     }
 
+    private fun safeFixUrl(rawUrl: String): String {
+        val trimmed = rawUrl.trim()
+        if (trimmed.isEmpty()) return ""
+        return fixUrl(trimmed)
+    }
+
     // ANA SAYFA
 
     override suspend fun getMainPage(
         page: Int,
         request: HomePageRequest
     ): HomePageResponse {
-
         ensureSourceUrl()
 
         val document = app.get(mainUrl).document
@@ -58,7 +61,6 @@ class HdFilmCehennemiProvider : MainAPI() {
     }
 
     private fun Element.toSearchResult(): SearchResponse? {
-
         val title = this.select(
             "a.title, h3 a, .film-title"
         ).text().trim()
@@ -69,7 +71,7 @@ class HdFilmCehennemiProvider : MainAPI() {
                 this.select("img").attr("src")
             }
 
-        val href = fixUrl(
+        val href = safeFixUrl(
             this.select("a").attr("href")
         )
 
@@ -91,7 +93,6 @@ class HdFilmCehennemiProvider : MainAPI() {
     override suspend fun search(
         query: String
     ): List<SearchResponse> {
-
         ensureSourceUrl()
 
         val searchUrl = "$mainUrl/arama?q=$query"
@@ -109,7 +110,6 @@ class HdFilmCehennemiProvider : MainAPI() {
     override suspend fun load(
         url: String
     ): LoadResponse {
-
         ensureSourceUrl()
 
         val document = app.get(url).document
@@ -135,26 +135,26 @@ class HdFilmCehennemiProvider : MainAPI() {
             document.select(".bolum-listesi").isNotEmpty()
 
         if (isSeries) {
-
             val episodes = ArrayList<Episode>()
 
             document.select(
                 ".bolum-secenekleri a, .episodelist a"
             ).forEachIndexed { index, element ->
-
                 val epName = element.text().trim()
-                val epUrl = fixUrl(
+                val epUrl = safeFixUrl(
                     element.attr("href")
                 )
 
-                episodes.add(
-                    Episode(
-                        data = epUrl,
-                        name = epName,
-                        episode = index + 1,
-                        season = 1
+                if (epUrl.isNotEmpty()) {
+                    episodes.add(
+                        Episode(
+                            data = epUrl,
+                            name = epName,
+                            episode = index + 1,
+                            season = 1
+                        )
                     )
-                )
+                }
             }
 
             return newTvSeriesLoadResponse(
@@ -167,46 +167,11 @@ class HdFilmCehennemiProvider : MainAPI() {
                 this.plot = description
                 this.year = year
             }
-
         } else {
-
-            val episodes = ArrayList<Episode>()
-
-            val altLinks = document.select(
-                ".alternatif-secenekleri a, .dil-secenekleri button"
-            )
-
-            if (altLinks.isNotEmpty()) {
-
-                altLinks.forEachIndexed { index, element ->
-
-                    val langName = element.text().trim()
-
-                    episodes.add(
-                        Episode(
-                            data = url,
-                            name = langName,
-                            episode = index + 1
-                        )
-                    )
-                }
-
-            } else {
-
-                episodes.add(
-                    Episode(
-                        data = url,
-                        name = "Tek Parça",
-                        episode = 1
-                    )
-                )
-            }
-
             return newMovieLoadResponse(
                 title,
                 url,
-                TvType.Movie,
-                episodes
+                TvType.Movie
             ) {
                 this.posterUrl = poster
                 this.plot = description
@@ -223,7 +188,6 @@ class HdFilmCehennemiProvider : MainAPI() {
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
-
         ensureSourceUrl()
 
         val document = app.get(data).document
@@ -232,9 +196,10 @@ class HdFilmCehennemiProvider : MainAPI() {
             "iframe.embed-responsive-item, iframe#playerElement"
         ).attr("src")
 
-        if (videoIframeUrl.isNotEmpty()) {
+        val resolvedUrl = safeFixUrl(videoIframeUrl)
+        if (resolvedUrl.isNotEmpty()) {
             loadExtractor(
-                fixUrl(videoIframeUrl),
+                resolvedUrl,
                 data,
                 subtitleCallback,
                 callback
